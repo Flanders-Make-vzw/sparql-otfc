@@ -1,0 +1,13 @@
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbp: <http://dbpedia.org/property/>
+PREFIX dbc: <http://dbpedia.org/resource/Category:>
+PREFIX fm: <http://flandersmake.be/otfc/>
+SELECT ?name
+WHERE {
+	?f dbo:wikiPageWikiLink dbc:James_Bond_films.
+	?f dbo:starring dbr:Sean_Connery.
+	?f fm:bondActorAge ?age.
+	?f dbp:name ?name.
+	FILTER (?age > 40)
+}

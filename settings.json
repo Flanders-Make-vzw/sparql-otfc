@@ -1,0 +1,36 @@
+{
+  "queryFormats": {
+    "sparql": true,
+    "graphql": true
+  },
+  "branding": {
+    "title": "Query the Web of Linked Data",
+    "title_href": "https://comunica.dev/",
+    "subtitle": "Featuring on-the-fly computations",
+    "subtitle_href": "/explore.html",
+    "page_title": "Comunica Web client"
+  },
+  "map": {
+    "url": "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw",
+    "attribution": "Map data &copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>"
+  },
+  "solidAuth": {
+    "settingsOnly": true,
+    "defaultIdp": ""
+  },
+  "datasources": [
+    {
+      "name": "DBpedia",
+      "url": "//localhost:3000/dbpedia/sparql"
+    },
+    {
+      "name": "Playground",
+      "url": "//localhost:3000/playground/sparql"
+    }    
+  ],
+  "prefixes": {
+    "rdf":         "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs":        "http://www.w3.org/2000/01/rdf-schema#"
+  },
+  "queries": "(Will be generated from the 'queries' folder by running the './queries-to-json' script.)"
+}

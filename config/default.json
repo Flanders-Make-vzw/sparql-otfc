@@ -1,0 +1,26 @@
+{
+  "otfc": {
+    "port": 3000,
+    "webPort": 3001,
+    "timeout": 120000,
+    "workers": 1,
+    "defaultSource": "https://dbpedia.org/sparql",
+    "sources": [
+      {
+        "name": "dbpedia",
+        "url": "https://dbpedia.org/sparql"
+      },
+      {
+        "name": "playground"
+      }
+    ],
+    "predicatesPath": "./src/predicates",
+    "prefixes": {
+      "dbo": "http://dbpedia.org/ontology/",
+      "dbr": "http://dbpedia.org/resource/",
+      "dbp": "http://dbpedia.org/property/",
+      "dbc": "http://dbpedia.org/resource/Category"
+    },
+    "debug": false
+  }
+}
