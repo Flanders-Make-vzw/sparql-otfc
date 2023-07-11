@@ -99,7 +99,7 @@ WHERE {
 }
 ```
 
-### Python:
+#### Python:
 
 Predicates implemented in Python are similar to those in JavaScript, see `rest-otfc/python/otfc_python_demo.py` for examples. Python predicates are hosted in their own web server that acts as a REST bridge to the SPARQL-OTFC endpoint. To install and run a Python predicate server, execute the following commands within the `rest-otfc/python` folder:
 
@@ -107,3 +107,7 @@ Predicates implemented in Python are similar to those in JavaScript, see `rest-o
 `python otfc_python_demo.py`
 
 Add `"predicatesREST_url": "http://localhost:8008"` to `config/default.json` and restart the OTFC-SPARQL endpoint. 
+
+### Contact
+
+Flanders Make is interested to know if you find this software useful. Please contact us at otfc@flandersmake.be with your use case or questions.
