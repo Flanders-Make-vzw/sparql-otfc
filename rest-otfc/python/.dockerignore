@@ -1,0 +1,4 @@
+# Ignore all files in the current directory
+# except for the requirements.txt since only that one is relevant for the build.
+**/*
+!requirements.txt
