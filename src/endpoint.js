@@ -240,9 +240,6 @@ class Endpoint extends communica.HttpServiceSparqlEndpoint {
             quad(s, `${sd}supportedLanguage`, `${sd}SPARQL10Query`),
             quad(s, `${sd}supportedLanguage`, `${sd}SPARQL11Query`),
         ];
-        // for (const p of features.virtualPredicates) {
-        //     quads.push(quad(s, `${sd}propertyFeature`, p));
-        // }
         let eventEmitter;
         try {
             // Append result formats

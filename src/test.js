@@ -11,7 +11,7 @@ const engine = new QueryEngine();
 let query = fs.readFileSync('./queries/bond.sparql', 'utf8');
 
 let i = 0;
-engine.run(query, { source: source }, data => {
+await engine.run(query, { source: source }, data => {
 	console.log(data);
 	i++;
 });

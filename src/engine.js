@@ -176,32 +176,43 @@ async function computePredicates(q, context, store) {
 }
 
 async function loadPredicates() {
-	// load local JavaScript predicates
+	await loadJSPredicates();
+	await loadPythonPredicates();
+}
+
+async function loadJSPredicates() {
 	if (config.has('otfc.predicatesPath')) {
 		const predicatesPath = config.get('otfc.predicatesPath')
-		// console.log(`Loading predicates from '${predicatesPath}'`);
+		console.log(`Loading predicates from '${predicatesPath}'`);
 		try {
 			let p = path.resolve(predicatesPath);
 			for (const f of fs.readdirSync(p)) {
 				if (!f.endsWith('.js')) { // ignore swap files
 					continue;
 				}
-				let mod = await import(pathToFileURL(path.join(p, f)));
-				if (mod.default.hasOwnProperty('substitute')) {
-					predicatesToSubstitute[mod.default.iri] = mod.default;
-					// console.log('Loaded substitute predicate plugin for <' + mod.default.iri + '>');
+				try {
+					let mod = await import(pathToFileURL(path.join(p, f)));
+					if (mod.default.hasOwnProperty('substitute')) {
+						predicatesToSubstitute[mod.default.iri] = mod.default;
+						console.log('Loaded substitute predicate plugin for <' + mod.default.iri + '>');
+					}
+					else if (mod.default.hasOwnProperty('compute')) {
+						predicatesToCompute[mod.default.iri] = mod.default;
+						console.log('Loaded compute predicate plugin for <' + mod.default.iri + '>');			
+					}
 				}
-				else if (mod.default.hasOwnProperty('compute')) {
-					predicatesToCompute[mod.default.iri] = mod.default;
-					// console.log('Loaded compute predicate plugin for <' + mod.default.iri + '>');			
+				catch (error) {
+					console.log(`Warning: unable to load predicate from ${path.join(p, f)}`);
+					console.log(error);
 				}
 			}
 		} catch (error) {
 			console.log(`Warning: unable to load any predicates from this location. Source ignored.`);
-			console.log(error);
 		}
 	}
-	// load remote Python predicates (via REST)
+}
+
+async function loadPythonPredicates() {
 	if (config.has('otfc.predicatesREST_url')) {
 		const restUrl = config.get('otfc.predicatesREST_url')
 		console.log(`Loading predicates from REST URL '${restUrl}'`);
@@ -213,10 +224,10 @@ async function loadPredicates() {
 				// TODO: migrate to "fetch" since this is the standard way to go for node >= 18.
 				const response = await axios.get(`${restUrl}/predicates`);
 				const predicateList = response.data;
-				predicateList.forEach(function(p) {
-					switch(p.predicateKind) {
+				predicateList.forEach(p => {
+					switch (p.predicateKind) {
 						case 'compute':
-							let predicate=new RESTComputePredicate(restUrl, p.predicateIRI, p.predicateQuery, p.predicateQuerySubject, p.predicateMeta);
+							let predicate = new RESTComputePredicate(restUrl, p.predicateIRI, p.predicateQuery, p.predicateQuerySubject, p.predicateMeta);
 							predicatesToCompute[p.predicateIRI] = predicate;
 							console.log('Loaded compute predicate plugin for <' + p.predicateIRI + '>');			
 							break;
@@ -241,6 +252,7 @@ async function loadPredicates() {
 		}
 	}
 }
+
 
 async function loadExtensionFunctions() {
 	// TODO: dynamically load from file similar to predicates
