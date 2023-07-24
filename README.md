@@ -16,7 +16,11 @@ This framework is built on top of Comunica (https://comunica.dev/) and released 
 
 3. To install the endpoint: run `npm install`. This will create a `node_modules` subdirectory in which all required dependencies will be installed.
 
-4. To install the optional web UI: run `npm install -g @comunica/web-client-generator`, then run `comunica-web-client-generator -s settings.json -q queries -d web`, then copy the file `w/explore.html` into the `web` folder.
+4. To install the optional web UI:
+
+- Linux or Mac: run `git clone https://github.com/comunica/jQuery-Widget.js.git`, then run `./bin/generate-web-ui.sh`.
+
+- Windows: run `npm install -g @comunica/web-client-generator`, then run `comunica-web-client-generator -s settings.json -q queries -d web`, then copy the file `w/explore.html` into the web folder.
 
 ### Configuration
 
