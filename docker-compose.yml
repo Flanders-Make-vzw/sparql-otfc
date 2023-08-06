@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  otfc-endpoint:
+    networks:
+      - isolated
+    image: otfc-endpoint
+    container_name: otfc-endpoint
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    # By default the config/default.json is used.
+    # Specify line below to use production.json instead (or any other json)
+    # Do not specify the json extension
+    # environment:
+    #   - NODE_ENV=production
+    volumes:
+      - ./src:/otfc/src
+      - ./config:/otfc/config
+      - ./queries:/otfc/queries
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    command: ["node", "src/endpoint.js"]
+
+  otfc-web:
+    networks:
+      - isolated
+    image: comunica/jquery-widget.js:latest
+    container_name: otfc-web
+    ports:
+      - "3001:80"
+    volumes:
+      - ./web/queries.json:/usr/share/nginx/html/queries.json
+      - ./w/explore.html:/usr/share/nginx/html/explore.html
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  # otfc-rest-python:
+  #   networks:
+  #     - isolated
+  #   image: otfc-rest-python:latest
+  #   container_name: otfc-rest-python
+  #   build:
+  #     context: ./rest-otfc/python
+  #     dockerfile: ./Dockerfile
+  #   ports:
+  #     - "3002:8008"
+  #   volumes:
+  #     - ./rest-otfc/python:/otfc
+  #   stdin_open: true
+  #   tty: true
+  #   restart: unless-stopped
+
+networks:
+  isolated:
+    driver: bridge

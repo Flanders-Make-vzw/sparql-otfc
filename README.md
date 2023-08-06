@@ -34,6 +34,10 @@ See `settings.json` for web UI configuration, i.e. specifying data sources and q
 
 2. To run the web UI: `node --no-warnings src/web.js`. Pointing a web browser to `http://localhost:3001` should the UI and queries are forwarded by default to an endpoint that is expected to run at `http://localhost:3000`.
 
+#### Via Docker:
+
+Run `docker compose -f docker-compose.yml up`.
+
 ### Querying
 
 #### Via the command line:
@@ -88,7 +92,7 @@ WHERE {
 
 To avoid overfetching and computing more than necessary, it is possible to merge the predicate query with the user query (i.e. a SPARQL query composed by a user that includes this computed predicate). In other words, constraints found in that user query are transfered to the predicate such that it e.g. only calculates `bondActorAge` triples for films starring a particular actor.
 
-To deploy the computed predicate, save it under `src/predicates` or a custom predicate directory specified in the configuration file (`config/default.json`) and restart the SPARQL-OTFC endpoint.
+To deploy the computed predicate, save it under `src/predicates` or a custom predicate directory specified in the configuration file (`config/default.json`) and restart the sparql-otfc endpoint.
 
 Then, the predicate can be used as shown in the example below:
 
@@ -105,12 +109,13 @@ WHERE {
 
 #### Python:
 
-Predicates implemented in Python are similar to those in JavaScript, see `rest-otfc/python/otfc_python_demo.py` for examples. Python predicates are hosted in their own web server that acts as a REST bridge to the SPARQL-OTFC endpoint. To install and run a Python predicate server, execute the following commands within the `rest-otfc/python` folder:
+Predicates implemented in Python are similar to those in JavaScript, see `rest-otfc/python/otfc_python_demo.py` for examples. Python predicates are hosted in their own web server that acts as a REST bridge to the sparql-otfc endpoint. To install and run a Python predicate server, execute the following commands within the `rest-otfc/python` folder:
 
 `pip install -r requirements.txt`
+
 `python otfc_python_demo.py`
 
-Add `"predicatesREST_url": "http://localhost:8008"` to `config/default.json` and restart the OTFC-SPARQL endpoint. 
+Add `"predicatesREST_url": "http://localhost:8008"` to `config/default.json` and restart the sparql-otfc endpoint. 
 
 ### Contact
 
