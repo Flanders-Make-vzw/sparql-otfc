@@ -7,11 +7,14 @@
     "defaultSource": "https://dbpedia.org/sparql",
     "sources": [
       {
+        "type": "sparql",
         "name": "dbpedia",
         "url": "https://dbpedia.org/sparql"
       },
       {
-        "name": "playground"
+        "type": "n3",
+        "name": "playground",
+        "imports": [ "./tutorial/samples.ttl" ]
       }
     ],
     "predicatesPath": "./src/predicates",

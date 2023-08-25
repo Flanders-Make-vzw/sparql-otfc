@@ -11,6 +11,7 @@ import { ArrayIterator } from 'asynciterator';
 import quad from 'rdf-quad';
 import config from 'config';
 import N3 from 'n3';
+import fs from 'fs';
 import { QueryEngine, features } from './engine.js';
 
 const invalidateCacheBeforeQuery = false;
@@ -33,9 +34,47 @@ class Endpoint extends communica.HttpServiceSparqlEndpoint {
         // init sources
         this.contextSources = {};
         for (const s of sources) {
-            this.contextSources[s.name] = (s.url)? { type: 'sparql', value: s.url } : new N3.Store();
+            switch (s.type) {
+            case 'n3':
+                this.createN3Store(s.name, s.imports, (store) => this.contextSources[s.name] = store);
+                break;
+            case 'sparql':
+            default:
+                this.contextSources[s.name] = { type: 'sparql', value: s.url };
+            }
         }
 	}
+
+    createN3Store(name, imports, callback) {
+        const store = new N3.Store();
+        console.log('Created empty triple store \"' + name + '\"');
+        if (!imports || !imports.length) {
+            return callback(store);
+        }
+        let n = imports.length;
+        for (const i of imports) {
+            console.log(i);
+            const parser = new N3.Parser(), rdfStream = fs.createReadStream(i);
+            parser.parse(rdfStream, (error, quad, prefixes) => {
+                if (quad) {
+                    store.addQuad(quad);
+                }
+                else {
+                    console.log('Loaded data from ' + i + ' into \"' + name + '\"');
+                    n--;
+                    callback(store);
+                }
+                if (error) {
+                    console.log(error);
+                    n--;
+                }
+                if (!n) {
+                    callback(store);
+                }
+            });
+        }
+        // else callback(store);
+    }
 
     async handleRequest(engine, variants, stdout, stderr, request, response) {
         const negotiated = negotiate.choose(variants, request)
