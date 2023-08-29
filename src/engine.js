@@ -64,6 +64,9 @@ export default class QueryEngine extends comunica.QueryEngine {
 					if (value.datatype && value.datatype.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON') {
 						v = JSON.parse(v);
 					}
+					else if (value.datatype && value.datatype.value === 'http://www.w3.org/2001/XMLSchema#decimal') {
+						v = parseFloat(v);
+					}
 					data[key.value] = v;
 	  			}
 	  			callback(data);

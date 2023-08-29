@@ -29,7 +29,9 @@ Follow the steps on [sparql-otfc#installation](https://github.com/Flanders-Make-
 
 ### A.2: configure and run
 
-1. In this tutorial we will use the data in [samples.ttl](samples.ttl) and host it in an in-memory triple store at the sparql-otfc endpoint. To do so, edit `config/default.json` and look for `sources`. Add to the configuration of the source named `playground` an `imports` array linking to the `samples.ttl` file as shown below. This will load the data in `samples.ttl` into the `playground` source.
+In this tutorial we will use the data in [samples.ttl](samples.ttl). This data is stored in [Turtle](https://www.w3.org/TR/turtle/) syntax, a textual representation of an [RDF](https://www.w3.org/RDF/) graph, and is expressed as triples consisting of a subject, predicate and object. To interrogate the data via the [SPARQL](https://www.w3.org/TR/rdf-sparql-query/) query language, we will load it into a graph database, in this case an in-memory triple store at the sparql-otfc endpoint.
+
+1. Edit `config/default.json` and look for `sources`. Add to the configuration of the source named `playground` an `imports` array linking to `samples.ttl` as shown below. This will load the data in [samples.ttl](samples.ttl) into the `playground` source such that it can be queried.
 ```json
 {
 	"type": "n3",
@@ -39,13 +41,17 @@ Follow the steps on [sparql-otfc#installation](https://github.com/Flanders-Make-
 ```
 2. Now run the endpoint and the web UI as outlined on [sparql-otfc#running](https://github.com/Flanders-Make-vzw/sparql-otfc#running).
 
-3. Point a web browser to `http://localhost:3000`. Choose `Playground` as data source (instead of the default `DBPedia`).
+3. Point a web browser to `http://localhost:3001`. Choose `Playground` as data source (instead of the default `DBPedia`).
+
+<img src="ui.png" width="720"/>
 
 ### A.3: first queries
 
-1. Run the default `any` query. This will return some ontological definitions mixed with instance data.
+Just like our dataset is expressed as triples, a [SPARQL](https://www.w3.org/TR/rdf-sparql-query/) query consists of a set of triple patterns in which each element (the subject, predicate and object) can be a variable (wildcard). Solutions to the variables are then found by matching the patterns in the query to triples in the dataset. As such, we can interrogate a digital twin as a directed graph, by simply resolving triple elements (subjects, predicates and/or objects).
 
-2. Try the query below to obtain all product instances. The iris in the result set correspond to products which consist of bonding two plates together.
+1. As a first experiment, run the default `any` query. This query matches any triple in the dataset and will return some ontological definitions mixed with instance data.
+
+2. Next, try the query below to obtain all product instances. The iris in the result set correspond to resources (products) which consist of bonding two plates together. Note that the `a` predicate in this query is a shortcut for `rdf:type` stating that a resource is an instance of a class.
 
 ````sparql
 SELECT ?product
@@ -54,19 +60,19 @@ WHERE {
 }
 ````
 
-3. The next query selects the two last process steps in a production process (`Curing` and `BreakStressTest`) and returns some properties from these steps: `curingTemperature` and `breakStress`.
+3. The following query selects the two last process steps in a production process (`Curing` and `BreakStressTest`) and returns some properties from these steps: `curingTemperature` and `breakStress`.
 
 ````sparql
 PREFIX dtaw: <http://www.flandersmake.be/ontology/dtaw#>
 
 SELECT *
 WHERE {
-	?curing a dtaw:Curing;
+	?curing a dtaw:Curing ;
 	    dtaw:curedProduct ?product ;
 	    dtaw:curingTemperature ?curingTemperature .
   
 	?test a dtaw:BreakStressTest ;
-	     dtaw:testedProduct ?product;
+	     dtaw:testedProduct ?product ;
 	     dtaw:breakStress ?breakStress .
 }
 ````
@@ -94,11 +100,11 @@ WHERE {
 
 ## PART B
 
-In this part of the tutorial we will compute a prediction of the break stress early on in the production process. This data is not part of the knowledge graph and needs to be computed on demand. For simplicity reasons, we will base our prediction on data collected in the first step of the production process where plates receive their plasma treatment: plasma distance and plasma power.
+After plasma treating, gluing and curing two plates into a product, the product may be lost if it does not pass the break stress test. To avoid this, we want to predict the break stress test in advance. In this part of the tutorial we will compute a prediction of the expected break stress early on in the production process. This data is not part of the knowledge graph and needs to be computed on demand. For simplicity reasons, we will base our prediction on data collected in the first step of the production process where plates receive their plasma treatment: plasma distance and plasma power.
 
 ### B.1: add a computed predicate
 
-1. Create a file `predicatedBreakStress.js` in `./predicates`. The skeleton of this file should look as follows:
+1. Create a file `predicatedBreakStress.js` in the `src/predicates` folder. The skeleton of this file should look as follows:
 
 ```javascript
 import Predicate from '../predicate.js';
@@ -123,10 +129,10 @@ We are creating a `PredictedBreakStressPredicate` class with an `iri` and `compu
 }
 ````
 
-2. Next we add a dummy function at the bottom of `predicatedBreakStress.js` that simulates a calculation for predicated break stress. 
+2. Next we add function at the bottom of `predicatedBreakStress.js` that simulates a calculation for predicated break stress. This function will be based on statistical models derived from earlier experiments, but for the sake of simpliclity we will use a dummy calculation as follows:
  ```javascript
-function calculatePredictedBreakStress(plasmaPowerA, plasmaPowerB, plasmaSpeedA, plasmaSpeedB) {
-	let pbs = ((plasmaDistanceA + plasmaDistanceB) * 12.3) / ((plasmaPowerA + plasmaPowerB) * 4.56);
+function calculatePredictedBreakStress(plasmaDistanceA, plasmaDistanceB, plasmaPowerA, plasmaPowerB) {
+	let pbs = ((plasmaPowerA + plasmaPowerB) * 4.56) / ((plasmaDistanceA + plasmaDistanceB) * 12.3);
 	return Math.round(pbs);
 }
 ````
@@ -141,7 +147,7 @@ static async compute(query, context, engine) {
 	let q = this.read('./queries/predictedBreakStress.sparql');
 	// execute predicate query and trigger callback for each matching sample
 	await engine.run(q, context, data => {
-		// calculate predicated break stress from sample properties and statistics
+		// calculate predicated break stress from sample properties
 		const pbs = calculatePredictedBreakStress(data.plasmaDistanceA, data.plasmaDistanceB,
 			data.plasmaPowerA, data.plasmaPowerB);
 		// store (sample, :predicatedBreakStress, value)
@@ -183,11 +189,11 @@ WHERE {
 	FILTER(?product = <http://www.flandersmake.be/ontology/dtaw#i/Product/SamPhase1_0>)
 }
 ````
-Still, our `compute` function will calculate predictions for each product in the knowledge graph since it is unaware of the query asked by a user. By merging constraints from the user query (the query listed above) into the predicate query (`predictedBreakStress.sparql`) we can optimize the calculations needed (i.e. just one calculation in this example). This is achieved by adapting the `compute` function as follows:
+Still, our `compute` function will calculate predictions for each product in the knowledge graph since it is unaware of the query asked by a user. By merging constraints from the user query (the query listed above) into the predicate query (`predictedBreakStress.sparql`) we can optimize the calculations needed (i.e. just one calculation in this example). This is achieved by adapting the `compute` function as follows (and restarting the endpoint):
 ````javascript
 let q = this.read('./queries/predictedBreakStress.sparql');
 // merge predicate query with user query
 q = this.merge(q, query, 'product', PredictedBreakStressPredicate.iri);
 
 ````
-The `merge` function will copy the `FILTER` expression from the user query into the `predicatedBreakStressPredicate.sparql` query at runtime which will now only return one product with plasma properties and hence only calculated one triple.
+The `merge` function will copy the `FILTER` expression from the user query into the `predicatedBreakStressPredicate.sparql` query at runtime which will now only return one product with plasma properties and hence only one triple will be calculated.

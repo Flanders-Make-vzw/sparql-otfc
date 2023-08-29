@@ -32,7 +32,7 @@ See `settings.json` for web UI configuration, i.e. specifying data sources and q
 
 1. To run the endpoint: `node --no-warnings src/endpoint.js`. Pointing a web browser to `http://localhost:3000` should return a SPARQL service description.
 
-2. To run the web UI: `node --no-warnings src/web.js`. Pointing a web browser to `http://localhost:3001` should the UI and queries are forwarded by default to an endpoint that is expected to run at `http://localhost:3000`.
+2. To run the web UI: `node --no-warnings src/web.js`. Pointing a web browser to `http://localhost:3001` should show the UI and queries are forwarded by default to an endpoint that is expected to run at `http://localhost:3000`.
 
 #### Via Docker:
 
