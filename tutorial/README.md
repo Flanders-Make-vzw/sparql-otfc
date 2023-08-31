@@ -2,6 +2,13 @@
 
 [Part A](#user-content-part-a) / [Part B](#user-content-part-b)
 
+## Prerequisits
+
+For this tutorial, you need:
+- a basic understanding of working with a command line;
+- some familiarity with query languages;
+- some familiarity with programming (scripting) languages.
+
 ## Introduction
 
 Digital twins are digital representations of physical objects or processes that integrate data about the object or process. The data often originates from different data sources at different points in time. The digital twin can be questioned on certain characteristics of the physical object or process, in order to answer potentially complex questions that are of value to the user of the digital twin.
