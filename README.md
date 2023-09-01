@@ -10,7 +10,7 @@ This framework is built on top of Comunica (https://comunica.dev/) and released 
 
 ### Installation
 
-1. Download and install [Node.js >= v18](https://nodejs.org/en/download/).
+1. Download and install [Node.js](https://nodejs.org/en/download/). You need at least v18 (not compatible with v16 or below).
  
 2. Open a terminal and checkout the sparql-otfc repo: `git clone https://github.com/Flanders-Make-vzw/sparql-otfc.git`
 
@@ -18,9 +18,8 @@ This framework is built on top of Comunica (https://comunica.dev/) and released 
 
 4. To install the optional web UI:
 
-- Linux or Mac: run `git clone https://github.com/comunica/jQuery-Widget.js.git`, then run `./bin/generate-web-ui.sh`.
-
-- Windows: run `npm install -g @comunica/web-client-generator`, then run `comunica-web-client-generator -s settings.json -q queries -d web`, then copy the file `w/explore.html` into the web folder.
+- Run `git clone https://github.com/comunica/jQuery-Widget.js.git`
+- Run `./bin/generate-web-ui.sh` (Linux or Mac) or `./bin/generate-web-ui.bat` (Windows).
 
 ### Configuration
 
@@ -30,9 +29,9 @@ See `settings.json` for web UI configuration, i.e. specifying data sources and q
 
 ### Running
 
-1. To run the endpoint: `node --no-warnings src/endpoint.js`. Pointing a web browser to `http://localhost:3000` should return a SPARQL service description.
+1. To run the endpoint: run `node --no-warnings src/endpoint.js` in a terminal. Pointing a web browser to `http://localhost:3000` should return a SPARQL service description.
 
-2. To run the web UI: `node --no-warnings src/web.js`. Pointing a web browser to `http://localhost:3001` should show the UI and queries are forwarded by default to an endpoint that is expected to run at `http://localhost:3000`.
+2. To run the web UI: run `node --no-warnings src/web.js` in another terminal. Pointing a web browser to `http://localhost:3001` should show the UI and queries are forwarded by default to an endpoint that is expected to run at `http://localhost:3000`.
 
 #### Via Docker:
 

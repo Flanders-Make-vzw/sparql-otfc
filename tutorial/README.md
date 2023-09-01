@@ -111,7 +111,7 @@ After plasma treating, gluing and curing two plates into a product, the product 
 
 ### B.1: add a computed predicate
 
-1. Create a file `predicatedBreakStress.js` in the `src/predicates` folder. The skeleton of this file should look as follows:
+1. Create a file `predictedBreakStress.js` in the `src/predicates` folder. The skeleton of this file should look as follows:
 
 ```javascript
 import Predicate from '../predicate.js';
@@ -143,9 +143,28 @@ function calculatePredictedBreakStress(plasmaDistanceA, plasmaDistanceB, plasmaP
 	return Math.round(pbs);
 }
 ````
-3. Note that this function takes as input the properties from a plasma treatment step selected by the last query in [A.3: first queries](a3-first-queries). Save this query in a file `predictedBreakStress.sparql` in the `queries` folder so we can easily integrate in our code.
+3. Note that this function takes as input the properties from a plasma treatment step selected by the last query in [A.3: first queries](a3-first-queries):
+````sparql
+PREFIX dtaw: <http://www.flandersmake.be/ontology/dtaw#>
 
-4. We will now use the `caculatePredicatedBreakStress` function and the `predictedBreakStress.sparql` query from the previous two steps inside the `compute` function as follows:
+SELECT ?product ?plasmaDistanceA ?plasmaPowerA ?plasmaDistanceB ?plasmaPowerB
+WHERE {
+	?gl dtaw:gluedProduct ?product ;
+	    dtaw:gluedPartA ?partA ;
+	    dtaw:gluedPartB ?partB .
+  
+	?pta dtaw:treatedPart ?partA ;
+	     dtaw:plasmaDistance ?plasmaDistanceA ;
+	     dtaw:plasmaPower ?plasmaPowerA .
+
+	?ptb dtaw:treatedPart ?partB ;
+	     dtaw:plasmaDistance ?plasmaDistanceB ;
+	     dtaw:plasmaPower ?plasmaPowerB .
+}
+````
+Save this query in a file `predictedBreakStress.sparql` in the `queries` folder so we can easily integrate in our code.
+
+4. We will now use the `calculatePredicatedBreakStress` function and the `predictedBreakStress.sparql` query from the previous two steps inside the `compute` function as follows:
 
 ````javascript
 static async compute(query, context, engine) {
@@ -167,6 +186,8 @@ static async compute(query, context, engine) {
 	return triples;
 }
 ````
+
+Update the `compute` function in `predicatedBreakStress.js` accordingly.
 
 5. Restart the sparql-otfc endpoint and verify that `Loaded compute predicate plugin for <http://www.flandersmake.be/ontology/dtaw#predictedBreakStress>` is shown in the console output.
 
