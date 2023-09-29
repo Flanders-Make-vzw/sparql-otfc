@@ -12,6 +12,7 @@ export default class Query {
 		const q = query.replace( /\{\{(.*?)\}\}/g, (x) => config.get(x.substring(2, x.length-2))); // replace {{}} variables
 		let parser = new sparqljs.Parser();
 		this.query = parser.parse(q);
+		this.subqueries = this.subs(this.query);
 		this.normalize();
 		this.validate();
 	}
@@ -27,26 +28,54 @@ export default class Query {
 		}
 	}
 
-	normalize() {
+	// TODO: normalize subqueries
+	normalize() { 
 		// simple paths supported: ^path1, path1/path2
 		// complex paths not supported: path1|path2, path1*, path1+, path1?, path1{m,n}, path1{n}, path1{m,}, path1{,n}
 		// -> these should somehow be translated to CONSTRUCT queries to support data offloading
-		const bgp = this.where().filter(w => w.type === 'bgp');
-		let id = 0;
-		for (let w of bgp) {
-			for (let i in w.triples) {
-				const t = w.triples[i];
-				if (t.predicate.type !== 'path') continue;
-	    		if (t.predicate.pathType === '^' && t.predicate.items.length === 1) {
-	    			w.triples[i] = { subject: t.object, predicate: t.predicate.items[0], object: t.subject };
+		for (const q of [ this ].concat(this.subqueries)) {
+			const bgp = q.where().filter(w => w.type === 'bgp');
+			let id = 0;
+			for (let w of bgp) {
+				for (let i in w.triples) {
+					const t = w.triples[i];
+					if (t.predicate.type !== 'path') continue;
+		    		if (t.predicate.pathType === '^' && t.predicate.items.length === 1) {
+		    			w.triples[i] = { subject: t.object, predicate: t.predicate.items[0], object: t.subject };
+					}
+					else if (t.predicate.pathType === '/'  && t.predicate.items.length === 2) {
+						const bn = { termType: 'BlankNode', value: 'bn_' + id++ };
+		    			w.triples[i] = { subject: t.subject, predicate: t.predicate.items[0], object: bn };
+		    			w.triples.splice(++i, 0, { subject: bn, predicate: t.predicate.items[1], object: t.object });
+					}
 				}
-				else if (t.predicate.pathType === '/'  && t.predicate.items.length === 2) {
-					const bn = { termType: 'BlankNode', value: 'bn_' + id++ };
-	    			w.triples[i] = { subject: t.subject, predicate: t.predicate.items[0], object: bn };
-	    			w.triples.splice(++i, 0, { subject: bn, predicate: t.predicate.items[1], object: t.object });
+			}
+		};
+	}
+
+	subs(query) {
+		let sq = [];
+		if (query.where) {
+			for (const w of query.where) {
+				if (w.queryType === 'SELECT') {
+					let q = new Query('');
+					q.query = w;
+					sq.push(q);
+					sq = sq.concat(this.subs(w));
+				}
+				else if (w.type === 'union') {
+					if (w.patterns) {
+						for (const p of w.patterns) {
+							let q = new Query('');
+							q.query = p;
+							sq.push(q);
+							sq = sq.concat(this.subs(p));
+						}						
+					}
 				}
 			}
 		}
+		return sq;
 	}
 
 	type() {
@@ -129,9 +158,16 @@ export default class Query {
 		let filters = this.whereFilters();
 		return filters.filter(f => {
 			let fx = (e) => {
-				if (operators.includes(e.operator))
+				if (operators.includes(e.operator)) {
 					return e.args.every(ee => fx(ee));
-				return e.args.every(a => a.termType !== 'Variable' || variables.includes(a.value));
+				}
+				else {
+					return e.args.every(a => {
+						if (a.args)
+							return a.args.every(aa => aa.termType !== 'Variable' || variables.includes(aa.value));
+						return a.termType !== 'Variable' || variables.includes(a.value);
+					});
+				}
 			};
 			return fx(f);
 		});
@@ -210,6 +246,10 @@ export default class Query {
 		// 	throw new Error('Federation not supported: query should contain a single FROM statement');
 		// }
 		let triples = this.whereTriples(), exclude = [], subjects = [], q = null;
+		// for (const q of this.subqueries) {
+		// 	char += '_';
+		// 	triples = triples.concat(spoofTriples(q.whereTriples(), char)); // spoofing needed as variables used in subqueries can be the same
+		// }
 		// collect paths that originate from computed predicates
 		for (const t of triples) {
 			if (predicates.includes(t.predicate.value)) {
@@ -233,7 +273,7 @@ export default class Query {
 			let efilters = this.whereFiltersContaining(evars, [ '&&' ]);
 			// if (efilters.length) {
 				let qx = createComputedSubjectFilterQuery(exclude, efilters, subjects).toString();
-				let bindings = await fx(qx, subjects);
+				let bindings = await fx(qx);
 				if (bindings) {
 					for (const s of subjects) {
 						let values = bindings.map(b => { return { termType: 'NamedNode', value: b.get(s).id } });
@@ -252,6 +292,24 @@ export default class Query {
 		// }
 		return q;
 	}
+}
+
+function spoofTriples(triples, char) {
+	let spoofed = [];
+	for (const t of triples) {
+		let ts = { ...t };
+		if (t.subject.termType === 'Variable') {
+			ts.subject.value = char + t.subject.value;
+		}
+		if (t.predicate.termType === 'Variable') {
+			ts.predicate.value = char + t.predicate.value;
+		}
+		if (t.object.termType === 'Variable') {
+			ts.object.value = char + t.object.value;
+		}
+		spoofed.push(ts);
+	}
+	return spoofed;
 }
 
 function shorten(iri, prefixes) {
@@ -289,3 +347,4 @@ function createComputedSubjectFilterQuery(triples, filters, subjects) {
 	// q.removeFrom();
 	return q;
 }
+

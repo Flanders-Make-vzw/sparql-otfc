@@ -38,7 +38,7 @@ export default class Predicate {
 				console.log(chalk.yellow.bold('Found constraint: ' + formatTriple(t)));
 			}
 		}
-		let filters = findFilters(q0, q1, mappings);
+		let filters = findFilters(q0, q1, mappings, v1);
 		if (filters.length) {
 			q0.addWhereFilters(filters);
 			console.log(chalk.yellow.bold('Found filters: ' + filters.length));
@@ -167,49 +167,52 @@ function findObjectMapping(q, subject, predicate) {
 
 function findConstraints(q0 /* predicate query */, q1 /* user query */, predicate, v0, v1) {
 	let constraints = [], variables = [], mappings = {};
-	for (const t of q1.whereTriples()) {
-		if (t.predicate.value === predicate) continue;
-		if (isVariable(t.subject) && t.subject.value === v1) {
-			let o = t.object.value;
-			if (isVariable(t.object)) {
-				let o0 = findObjectMapping(q0, t.subject.value, t.predicate.value);
-				variables.push(o);
-				mappings[o] = (o0)? o0 : '_' + o; o = mappings[o];
+
+	for (const q of [ q1 ].concat(q1.subqueries)) {
+		for (const t of q.whereTriples()) {
+			if (t.predicate.value === predicate) continue;
+			if (isVariable(t.subject) && t.subject.value === v1) {
+				let o = t.object.value;
+				if (isVariable(t.object)) {
+					let o0 = findObjectMapping(q0, t.subject.value, t.predicate.value);
+					variables.push(o);
+					mappings[o] = (o0)? o0 : '_' + o; o = mappings[o];
+				}
+				constraints.push({ s: v0, p: t.predicate.value, o: o });
 			}
-			constraints.push({ s: v0, p: t.predicate.value, o: o });
-		}
-		else if (isVariable(t.subject) && variables.includes(t.subject.value)) {
-			let o = t.object.value, s = t.subject.value;
-			if (isVariable(t.object)) {
-				let o0 = findObjectMapping(q0, t.subject.value, t.predicate.value);
-				variables.push(o);
-				mappings[o] = (o0)? o0 : '_' + o; o = mappings[o];
-			}			
-			constraints.push({ s: mappings[s]? mappings[s] : s, p: t.predicate.value, o: o });
-		}
-		else if (isVariable(t.object) && t.object.value === v1) {
-			let o = t.object.value, s = t.subject.value;
-			if (isVariable(t.subject)) {
-				let s0 = findSubjectMapping(q0, t.predicate.value, t.object.value);
-				variables.push(s);
-				mappings[s] = (s0)? s0 : '_' + s; s = mappings[s];
+			else if (isVariable(t.subject) && variables.includes(t.subject.value)) {
+				let o = t.object.value, s = t.subject.value;
+				if (isVariable(t.object)) {
+					let o0 = findObjectMapping(q0, t.subject.value, t.predicate.value);
+					variables.push(o);
+					mappings[o] = (o0)? o0 : '_' + o; o = mappings[o];
+				}			
+				constraints.push({ s: mappings[s]? mappings[s] : s, p: t.predicate.value, o: o });
 			}
-			constraints.push({ s: s, p: t.predicate.value, o: v0 });
-		}
-		else if (isVariable(t.object) && variables.includes(t.object.value)) {
-			let o = t.object.value, s = t.subject.value;
-			if (isVariable(t.subject)) {
-				let s0 = findSubjectMapping(q0, t.predicate.value, t.object.value);
-				variables.push(s);
-				mappings[s] = (s0)? s0 : '_' + s; s = mappings[s];
+			else if (isVariable(t.object) && t.object.value === v1) {
+				let o = t.object.value, s = t.subject.value;
+				if (isVariable(t.subject)) {
+					let s0 = findSubjectMapping(q0, t.predicate.value, t.object.value);
+					variables.push(s);
+					mappings[s] = (s0)? s0 : '_' + s; s = mappings[s];
+				}
+				constraints.push({ s: s, p: t.predicate.value, o: v0 });
 			}
-			constraints.push({ s: s, p: t.predicate.value, o: mappings[o]? mappings[o] : o });
+			else if (isVariable(t.object) && variables.includes(t.object.value)) {
+				let o = t.object.value, s = t.subject.value;
+				if (isVariable(t.subject)) {
+					let s0 = findSubjectMapping(q0, t.predicate.value, t.object.value);
+					variables.push(s);
+					mappings[s] = (s0)? s0 : '_' + s; s = mappings[s];
+				}
+				constraints.push({ s: s, p: t.predicate.value, o: mappings[o]? mappings[o] : o });
+			}
 		}
 	}
 	return [ constraints, mappings ];
 }
 
-function findFilters(q0 /* predicate query */, q1 /* user query */, mappings) {
+function findFilters(q0 /* predicate query */, q1 /* user query */, mappings, v1) {
 	let filters = [];
 	const findExpressions = function(e) {
 		let args = [];
@@ -220,7 +223,8 @@ function findFilters(q0 /* predicate query */, q1 /* user query */, mappings) {
 					args.push(ee);
 				}
 			}
-			return (e.args.length == args.length)? { type: e.type, operator: e.operator, args: args } : null;
+			return (args.length == 1)? args[0] : (args.length > 0)? { type: e.type, operator: e.operator, args: args } : null;
+
 		}
 		else if (e.operator === '||') {
 			for (const a of e.args) {
@@ -229,7 +233,7 @@ function findFilters(q0 /* predicate query */, q1 /* user query */, mappings) {
 					args.push(ee);
 				}
 			}
-			return (e.args.length > 0)? { type: e.type, operator: e.operator, args: args } : null; // not sure if || with one arg is allowed
+			return (e.args.length == args.length)? { type: e.type, operator: e.operator, args: args } : null;
 		}
 		else {
 			for (const a of e.args) {
@@ -238,6 +242,9 @@ function findFilters(q0 /* predicate query */, q1 /* user query */, mappings) {
 					if (!v) return null; // ignore this expression since the variable is not known in q
 					args.push({ termType: a.termType, value: v });
 				}
+				else if (a.args) {
+					args.push(findExpressions(a));
+				}
 				else {
 					args.push(a);
 				}
@@ -245,9 +252,11 @@ function findFilters(q0 /* predicate query */, q1 /* user query */, mappings) {
 			return { type: e.type, operator: e.operator, args: args };
 		}
 	}
-	for (const e of q1.whereFilters()) {
-		const ee = findExpressions(e);
-		if (ee) filters.push(ee);
+	for (const q of [ q1 ].concat(q1.subqueries)) {
+		for (const e of q1.whereFilters()) {
+			const ee = findExpressions(e);
+			if (ee) filters.push(ee);
+		}
 	}
 	return filters;
 }
