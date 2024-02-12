@@ -347,4 +347,3 @@ function createComputedSubjectFilterQuery(triples, filters, subjects) {
 	// q.removeFrom();
 	return q;
 }
-

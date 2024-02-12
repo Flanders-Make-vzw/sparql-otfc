@@ -12,6 +12,11 @@
         "url": "https://dbpedia.org/sparql"
       },
       {
+        "type": "sparql",
+        "name": "wikidata",
+        "url": "https://query.wikidata.org/sparql"
+      },
+      {
         "type": "n3",
         "name": "playground",
         "imports": [ "./tutorial/samples.ttl" ]

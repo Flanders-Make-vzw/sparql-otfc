@@ -15,6 +15,7 @@ import { pathToFileURL } from 'url';
 import axios from 'axios';
 import chalk from 'chalk';
 import Query from './query.js';
+import Predicate from './predicate.js';
 import { RESTComputePredicate } from './predicate.js';
 
 const predicatesToCompute = {}, predicatesToSubstitute = {};
@@ -50,7 +51,7 @@ export default class QueryEngine extends comunica.QueryEngine {
 	// execute a query with predicates to resolve and print the results on stdout
 	async run(query, context, callback) {
 		let q = (query instanceof Query)? query : new Query(query);
-		return new Promise(async (resolve) => {
+		return new Promise(async resolve => {
 	    	// console.log(chalk.blue.bold('Preprocessing\n---\n') + q.toString() + chalk.blue.bold('\n---'));
 			const [ pq, ctx ] = await preprocess(q, context);
 			console.log(chalk.blue.bold('Executing\n---\n') + pq + chalk.blue.bold('\n---'));
@@ -80,6 +81,10 @@ export default class QueryEngine extends comunica.QueryEngine {
 
 	async meta() {
 		return meta();
+	}
+
+	async substitute(predicate, query) {
+		return addJSSubstitutePredicate(predicate, new Query(query));
 	}
 }
 
@@ -268,6 +273,14 @@ async function loadPythonPredicates() {
 	}
 }
 
+function addJSSubstitutePredicate(predicate, query) {
+	console.log('Added substitute query for predicate <' + predicate + '>');
+	predicatesToSubstitute[predicate] = {
+		substitute: (q, context) => {
+			Predicate.submerge(q, query, predicate);
+		}
+	}
+}
 
 async function loadExtensionFunctions() {
 	// TODO: dynamically load from file similar to predicates

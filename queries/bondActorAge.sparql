@@ -2,12 +2,11 @@ PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbc: <http://dbpedia.org/resource/Category:>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX fm: <http://flandersmake.be/otfc/>
 SELECT ?film ?dob ?abstract
 WHERE {
-	?film dbo:wikiPageWikiLink dbc:James_Bond_films.
-	?film rdfs:comment ?abstract.
-    ?film dbo:starring ?actor.
-    dbr:Portrayal_of_James_Bond_in_film dbo:portrayer ?actor.
+    ?film rdfs:comment ?abstract.
+    ?film fm:bondActor ?actor.
     ?actor dbo:birthDate ?dob.
     FILTER (LANG(?abstract) = 'en')
 }

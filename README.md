@@ -116,6 +116,47 @@ Predicates implemented in Python are similar to those in JavaScript, see `rest-o
 
 Add `"predicatesREST_url": "http://localhost:8008"` to `config/default.json` and restart the sparql-otfc endpoint. 
 
+### Adding a substituted predicate
+
+For scenarios where it is desireable to simplify SPARQL queries without a need for complex computations, we support substituted predicates. Instead of a `compute` function, these predicates implement a `substitute` function which alters a user's query. This alteration is expressed via a subtitute query as illustrated in the example below. Here, the `'http://flandersmake.be/otfc/bondActor` predicate offers a shorthand over DBpedia expressions. Note that the variables `?s` and `?o`  are reserved here to connect with the subject and object of a query of the `bondActor` predicate when used in a query.
+
+```javascript
+export default class BondActorPredicate extends Predicate {
+	static iri = 'http://flandersmake.be/otfc/bondActor';
+
+	static async substitute(query, context, engine) {
+		this.submerge(query, new Query(`
+			PREFIX dbo: <http://dbpedia.org/ontology/>
+			PREFIX dbr: <http://dbpedia.org/resource/>
+			PREFIX dbp: <http://dbpedia.org/property/>
+			PREFIX dbc: <http://dbpedia.org/resource/Category:>
+			SELECT *
+			WHERE {
+				?_s dbo:wikiPageWikiLink dbc:James_Bond_films.
+				?_s dbo:starring ?_o.
+				dbr:Portrayal_of_James_Bond_in_film dbo:portrayer ?_o.
+			}
+		`), BondActorPredicate.iri);
+	}
+}
+```
+
+Substituted precicates can also be added dynamically via a REST API. The example below illustrates how a predicate `iri` and a substitute `query` are posted to a `substitute` REST API endpoint.
+
+```javascript
+const response = await fetch('http://localhost:3000/substitute', {
+    method: 'post',
+    mode: 'cors',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+    	predicate: 'http://flandersmake.be/otfc/bondActor',
+    	query: fs.readFileSync('./queries/bondActor.sparql', 'utf8')
+    })
+});
+````
+
 ### Contact
 
 Flanders Make is interested to know if you find this software useful. Please contact us at otfc@flandersmake.be with your use case or questions.

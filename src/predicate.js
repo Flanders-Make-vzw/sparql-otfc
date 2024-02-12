@@ -51,8 +51,46 @@ export default class Predicate {
 		return q0;
 	}
 
+	static submerge(q0 /* user query */, q1 /* substitute query */, predicate) {
+		let prefixes = q0.prefixes();
+		for (const p in q1.prefixes()) {
+			prefixes[p] = q1.prefixes()[p];
+		}
+		q0.setPrefixes(prefixes);
+		for (const t of q0.whereTriples()) {
+			if (t.predicate.value === predicate) {
+				q0.removeWhereTriples([ t ]);
+				for (const tt of q1.whereTriples()) {
+					const s = (tt.subject.value === '_s')? t.subject : tt.subject;
+					const o = (tt.object.value === '_o')? t.object : tt.object;
+					q0.addWhereTriples([ { subject: s, predicate: tt.predicate, object: o } ]);
+				}
+				const replaceVariablesInExpressions = (args) => {
+					for (let arg of args) {
+						if (isVariable(arg) && arg.value === '_s') arg.value = t.subject.value;
+						else if (isVariable(arg) && arg.value === '_s') arg.value = t.object.value;
+						if (arg.args) replaceVariablesInExpressions(arg.args);
+					}	
+				};
+				for (const bb of q1.whereBinds()) {
+					let b = { ...bb };
+					if (b.variable?.value === '_s') b.variable.value = t.subject.value;
+					else if (b.variable?.value === '_o') b.variable.value = t.object.value;
+					if (b.expression) {
+						replaceVariablesInExpressions(b.expression.args);
+					}
+					q0.addWhereBinds([ b ]);
+				}
+				for (const ff of q1.whereFilters()) {
+					replaceVariablesInExpressions(f.args);
+					q0.addWhereFilters([ f ]);
+				}				
+			}
+		}
+		return q0.toString();
+	}
+
 	static iri(n) {
-		// return '<' + s + '>';
 		return namedNode(n);
 	}
 

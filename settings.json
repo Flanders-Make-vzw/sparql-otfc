@@ -24,9 +24,13 @@
       "url": "//localhost:3000/dbpedia/sparql"
     },
     {
+      "name": "Wikidata",
+      "url": "//localhost:3000/wikidata/sparql"
+    },
+    {
       "name": "Playground",
       "url": "//localhost:3000/playground/sparql"
-    }    
+    }
   ],
   "prefixes": {
     "rdf":         "http://www.w3.org/1999/02/22-rdf-syntax-ns#",

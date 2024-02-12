@@ -102,6 +102,13 @@ class Endpoint extends communica.HttpServiceSparqlEndpoint {
             response.end(JSON.stringify(data));
             return;
         }
+        if (request.url === '/substitute') {
+            const data = await parseJSON(request);
+            engine.substitute(data.predicate, data.query);
+            response.writeHead(200, { 'Access-Control-Allow-Origin': '*' });
+            response.end();
+            return;
+        }        
         if (!requestUrl.pathname || !requestUrl.pathname.endsWith('/sparql')) {
             stdout.write('[404] Resource not found. Queries are accepted on /sparql.\n');
             response.writeHead(404, { 'content-type': communica.HttpServiceSparqlEndpoint.MIME_JSON,
@@ -307,6 +314,21 @@ class Endpoint extends communica.HttpServiceSparqlEndpoint {
         }
         this.stopResponse(response, 0, eventEmitter);
     }
+}
+
+function parseJSON(request) {
+    return new Promise((resolve, reject) => {
+        let body = '';
+        request.setEncoding('utf8');
+        request.on('error', reject);
+        request.on('data', chunk => {
+            body += chunk;
+        });
+        request.on('end', () => {
+            try { resolve(JSON.parse(body)); }
+            catch (err) { reject(err); }
+        });
+    });
 }
 
 export default class OTFCEndpoint {
