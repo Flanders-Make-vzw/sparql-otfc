@@ -8,11 +8,13 @@
   "dependencies": {
     "@comunica/query-sparql": "~3.1.2",
     "@comunica/query-sparql-file": "~3.1.2",
+    "sparqlalgebrajs": "^4.3.8",
     "sparqljs": "~3.7.1",
     "n3": "~1.17.3",
     "express": "~4.19.2",
     "config": "~3.3.11",
     "axios": "~1.7.2",
+    "lodash": "~4.17.21",
     "chalk": "~5.3.0"
   }
 }
