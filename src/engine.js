@@ -27,8 +27,9 @@ const debug = config.get('otfc.debug');
 
 export default class QueryEngine extends comunica.QueryEngine {
 
-	constructor(engine = engineDefault) {
-		let actors = engineDefault.mediatorQueryResultSerialize.bus.actors.filter(a => a.name === 'urn:comunica:default:query-result-serialize/actors#sparql-json');
+	constructor(engine = engineDefault()) {
+		// console.log(engineDefault().mediatorQueryResultSerialize);
+		let actors = engine.mediatorQueryResultSerialize.bus.actors.filter(a => a.name === 'urn:comunica:default:query-result-serialize/actors#sparql-json');
 		if (actors.length == 1) actors[0].emitMetadata = false; // avoid metadata being added to a sparql-results-json response
 		super(engine);
 
