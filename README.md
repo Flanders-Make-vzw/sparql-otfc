@@ -116,28 +116,45 @@ Predicates implemented in Python are similar to those in JavaScript, see `rest-o
 
 Add `"predicatesREST_url": "http://localhost:8008"` to `config/default.json` and restart the sparql-otfc endpoint. 
 
-### Adding a substituted predicate
+### Adding a substitution predicate
 
-For scenarios where it is desireable to simplify SPARQL queries without a need for complex computations, we support substituted predicates. Instead of a `compute` function, these predicates implement a `substitute` function which alters a user's query. This alteration is expressed via a subtitute query as illustrated in the example below. Here, the `'http://flandersmake.be/otfc/bondActor` predicate offers a shorthand over DBpedia expressions. Note that the variables `?s` and `?o`  are reserved here to connect with the subject and object of a query of the `bondActor` predicate when used in a query.
+For scenarios where it is desireable to simplify SPARQL queries without a need for complex computations, we support substituted predicates. Instead of a `compute` function, these predicates implement a `substitutionQuery` variable. That variable contains the textual query that replaces every occurrence of the predicate. 
+
+In the example below, the `http://flandersmake.be/otfc/bondActor` predicate will get replaced by the substitutionQuery and therefore acts as a shorthand for these DBpedia expressions. Note that the variables `?_s` and `?_o`  are reserved here to connect with the subject and object of the `bondActor` predicate when used in a query.
 
 ```javascript
+import Predicate from '../predicate.js';
+
 export default class BondActorPredicate extends Predicate {
 	static iri = 'http://flandersmake.be/otfc/bondActor';
 
-	static async substitute(query, context, engine) {
-		this.submerge(query, new Query(`
-			PREFIX dbo: <http://dbpedia.org/ontology/>
-			PREFIX dbr: <http://dbpedia.org/resource/>
-			PREFIX dbp: <http://dbpedia.org/property/>
-			PREFIX dbc: <http://dbpedia.org/resource/Category:>
-			SELECT *
-			WHERE {
-				?_s dbo:wikiPageWikiLink dbc:James_Bond_films.
-				?_s dbo:starring ?_o.
-				dbr:Portrayal_of_James_Bond_in_film dbo:portrayer ?_o.
-			}
-		`), BondActorPredicate.iri);
-	}
+	static substitutionQuery = `
+		PREFIX dbo: <http://dbpedia.org/ontology/>
+		PREFIX dbr: <http://dbpedia.org/resource/>
+		PREFIX dbp: <http://dbpedia.org/property/>
+		PREFIX dbc: <http://dbpedia.org/resource/Category:>
+		SELECT *
+		WHERE {
+			?_s dbo:wikiPageWikiLink dbc:James_Bond_films.
+			?_s dbo:starring ?_o.
+			dbr:Portrayal_of_James_Bond_in_film dbo:portrayer ?_o.
+		}
+	`;
+}
+```
+
+This allows to answer queries such as:
+
+```sparql
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbp: <http://dbpedia.org/property/>
+PREFIX dbc: <http://dbpedia.org/resource/Category:>
+PREFIX fm: <http://flandersmake.be/otfc/>
+SELECT ?name
+WHERE {
+	?f fm:bondActor dbr:Sean_Connery.
+	?f dbp:name ?name.
 }
 ```
 
@@ -155,7 +172,17 @@ const response = await fetch('http://localhost:3000/substitute', {
     	query: fs.readFileSync('./queries/bondActor.sparql', 'utf8')
     })
 });
-````
+```
+
+Depending on the substitution query's complexity OTFC performs the substitution in different ways:
+* Queries without group by, order by or limit are typically inlined.
+* Queries using group by, order by or limit cannot be inlined. They will be substituted as subqueries. This means that they will get executed _before_ the other parts of the query (see https://www.w3.org/TR/sparql11-query/#subqueries). As with any normal subquery, this may cause performance issues. 
+
+### Limitations
+
+* The presence of computed predicates for now strongly limits the allowed complexity of the user queries.
+  It will refuse to answer for instance user queries that contain grouping, or a bit more complex path expressions.
+  Substitution queries do not have this limitation. If you want to enjoy the stronger abilities of the substitution queries, you should therefore not specify any compute queries. Allowing the same flexibility for compute queries is on our todo list.
 
 ### Contact
 

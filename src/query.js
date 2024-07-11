@@ -13,44 +13,6 @@ export default class Query {
 		let parser = new sparqljs.Parser();
 		this.query = parser.parse(q);
 		this.subqueries = this.subs(this.query);
-		this.normalize();
-		this.validate();
-	}
-
-	validate() {
-		if (this.groups().length) {
-			// excluding a.o. subqueries
-			throw new Error('Validation failed: group patterns are not supported');
-		}
-		if (this.whereTriples().filter(t => t.predicate.type === 'path').length) {
-			// excluding property paths (after normalization)
-			throw new Error('Validation failed: property paths are not supported');
-		}
-	}
-
-	// TODO: normalize subqueries
-	normalize() { 
-		// simple paths supported: ^path1, path1/path2
-		// complex paths not supported: path1|path2, path1*, path1+, path1?, path1{m,n}, path1{n}, path1{m,}, path1{,n}
-		// -> these should somehow be translated to CONSTRUCT queries to support data offloading
-		for (const q of [ this ].concat(this.subqueries)) {
-			const bgp = q.where().filter(w => w.type === 'bgp');
-			let id = 0;
-			for (let w of bgp) {
-				for (let i in w.triples) {
-					const t = w.triples[i];
-					if (t.predicate.type !== 'path') continue;
-		    		if (t.predicate.pathType === '^' && t.predicate.items.length === 1) {
-		    			w.triples[i] = { subject: t.object, predicate: t.predicate.items[0], object: t.subject };
-					}
-					else if (t.predicate.pathType === '/'  && t.predicate.items.length === 2) {
-						const bn = { termType: 'BlankNode', value: 'bn_' + id++ };
-		    			w.triples[i] = { subject: t.subject, predicate: t.predicate.items[0], object: bn };
-		    			w.triples.splice(++i, 0, { subject: bn, predicate: t.predicate.items[1], object: t.object });
-					}
-				}
-			}
-		};
 	}
 
 	subs(query) {
@@ -217,6 +179,7 @@ export default class Query {
 	pathToTerm(to) {
 		let path = [];
 		for (const t of this.whereTriples()) {
+			// FIXME: Question: why t. on both sides of the ===? one should be 'to'?
 			if (t.object.termType === t.object.termType && t.object.value === to.value) {
 				path.push(t);
 				if (t.subject.termType !== 'NamedNode') {
