@@ -187,7 +187,10 @@ class Endpoint extends communica.HttpServiceSparqlEndpoint {
             stderr.write(error.stack);
             server.close();
             for (const connection of openConnections) {
-                connection.writeHead(400, { 'content-type': communica.HttpServiceSparqlEndpoint.MIME_PLAIN, 'Access-Control-Allow-Origin': '*' });
+                // FIXME: Disabled the following line since it writes headers to a closed connection.
+                // Effect occurs e.g. when the client sends request to / instead of to /sparql.
+                // This makes the server spin eternally on uncaugt exception.
+                // connection.writeHead(400, { 'content-type': communica.HttpServiceSparqlEndpoint.MIME_PLAIN, 'Access-Control-Allow-Origin': '*' });
                 await new Promise(resolve => connection.end(error.toString(), resolve));
             }
             process.exit(15);
