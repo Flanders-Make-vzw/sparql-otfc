@@ -59,8 +59,6 @@ export default class QueryEngine extends comunica.QueryEngine {
 			}
 		});
 
-		console.log("Comunica run starts with context:\n" + JSON.stringify(ctx, null, 2));
-
 		// The substitution does not affect the context of perform any query.
 		// It only rewrites the query if required.
 		if (Object.keys(predicatesToSubstitute).length > 0) {
@@ -98,8 +96,6 @@ export default class QueryEngine extends comunica.QueryEngine {
 				}
 			});
 
-			console.log("Comunica run starts with context:\n" + JSON.stringify(ctx, null, 2));
-	
 			// The substitution does not affect the context of perform any query.
 			// It only rewrites the query if required.
 			if (Object.keys(predicatesToSubstitute).length > 0) {
