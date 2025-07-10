@@ -63,7 +63,7 @@ async def getPredicates(otfc: OTFCPython = Depends(OTFCPython)) -> List[OTFCPred
 async def compute(computationRequest: OTFCComputationRequest, otfc: OTFCPython = Depends(OTFCPython)) -> OTFCComputationResult:
     """Mandatory REST method
     
-       The incoming call provides an OTFCComputationRequest with the structure as described aboven.
+       The incoming call provides an OTFCComputationRequest with the structure as described above.
        It contains the IRI of the to be processed predicate and a list of computation inputs.
        Based on this information, the predicate's registered callback is called for each individual row of computation inputs.
        The callback's invocation results are collected in the OTFCComputationResult object and sent back to the caller.
