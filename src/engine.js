@@ -51,16 +51,28 @@ export default class QueryEngine extends comunica.QueryEngine {
         ctx.httpTimeout = 120_000;
         ctx.fetch = otfcFetch;
 
+		// For all sources, contribute a context with its authentication if relevant.
+		ctx.sources.forEach(s => {
+			if (s.type === 'sparql' && s.value && authSources[s.value]) {
+				if (!s.context) { s.context = {}; }
+				s.context.httpAuth = authSources[s.value];
+			}
+		});
+
+		// The substitution does not affect the context of perform any query.
+		// It only rewrites the query if required.
 		if (Object.keys(predicatesToSubstitute).length > 0) {
 			console.log(chalk.blue.bold('Applying substitutions\n---\n') + q.toString() + chalk.blue.bold('\n---'));
 			q = new Query(this._substitutionHandler.handle(q.toString(), predicatesToSubstitute));
 		}
 
+		// The computation may need & affect both the query and the context, so we pass it along.
 		if (Object.keys(predicatesToCompute).length > 0) {
 			console.log(chalk.blue.bold('Applying computations\n---\n') + q.toString() + chalk.blue.bold('\n---'));
 			[ q, ctx ] = await this._computationHandler.handle(q, ctx, predicatesToCompute);
 		}
 
+		// Finally, the - optionally changed - query is executed.
 		console.log(chalk.blue.bold('Executing\n---\n') + q + chalk.blue.bold('\n---'));
 		const result = super.query(q.toString(), ctx);
 		return result;
@@ -75,17 +87,29 @@ export default class QueryEngine extends comunica.QueryEngine {
 			ctx.extensionFunctions = extensionFunctions;
 			ctx.httpTimeout = 120_000;
 			ctx.fetch = otfcFetch;
-	
+			
+			// For all sources, contribute a context with its authentication if relevant.
+			ctx.sources.forEach(s => {
+				if (s.type === 'sparql' && s.value && authSources[s.value]) {
+					if (!s.context) { s.context = {}; }
+					s.context.httpAuth = authSources[s.value];
+				}
+			});
+
+			// The substitution does not affect the context of perform any query.
+			// It only rewrites the query if required.
 			if (Object.keys(predicatesToSubstitute).length > 0) {
 				console.log(chalk.blue.bold('Applying substitutions\n---\n') + q.toString() + chalk.blue.bold('\n---'));
 				q = new Query(this._substitutionHandler.handle(q.toString(), predicatesToSubstitute));
 			}
 	
+			// The computation may need & affect both the query and the context, so we pass it along.
 			if (Object.keys(predicatesToCompute).length > 0) {
 				console.log(chalk.blue.bold('Applying computations\n---\n') + q.toString() + chalk.blue.bold('\n---'));
 				[ q, ctx ] = await this._computationHandler.handle(q, ctx, predicatesToCompute, extensionFunctions);
 			}
 	
+			// Finally, the - optionally changed - query is executed.
 			console.log(chalk.blue.bold('Executing\n---\n') + q + chalk.blue.bold('\n---'));
 			const bindingsStream = await engine.queryBindings(q.toString(), ctx);
 			// bindingsStream.on('error', (err) => console.log(err));
@@ -291,13 +315,31 @@ async function probe() {
 
 let _redirects = {};
 
+/**
+ * This method is provided in Comunica's context as a refined replacement of the default fetch.
+ * It adds optional authentication and endpoint mediation.
+ *
+ * This function wraps the standard `fetch` API to provide additional features:
+ * - Provides some additional logging for debugging purposes.
+ * - Mediates between SPARQL endpoint implementations that may not conform to expected URL patterns.
+ *   It therefore handles URL redirects based on the `_redirects` mapping ( a hack ).
+ *   ! Probably outdated.
+ * - Adds HTTP Basic authentication headers if the URL is present in `authSources`.
+ *   ! Probably outdated.
+ *
+ * @param {string} input - The resource URL or key to fetch.
+ * @param {Object} [options] - Fetch options, including headers and body.
+ * @returns {Promise<Response>} A promise that resolves to the fetch response.
+ */
 function otfcFetch(input, options) {
 	let url = _redirects[input]? _redirects[input] : input;
+	/* FIXME: Disabled for now, code moved to query engine. Remove once confirmed working.
 	if (authSources[url]) {
 		if (!options) { options = {}; }
 		if (!options.headers) { options.headers = {} }
 		if (!options.headers.authorization) { options.headers.authorization = 'Basic ' + Buffer.from(authSources[url]).toString('base64'); }
 	}
+	*/
 	if (options && options.body) {
 		const query = (options.body.get)? options.body.get('query') : options.body;
 		// const controller = new AbortController(); -> disable timeouts
@@ -319,6 +361,8 @@ function otfcFetch(input, options) {
 	}
 	else if (!input.endsWith('/sparql')) {
 		// advanced hacking to mediate between e.g. GraphDB not sticking to SPARQL end-point specs and Comunica expecting an end-point to end with /sparql
+		// FIXME: It is unclear whether this hack is still required: Comunica allows the specification of 'sparql' as a source type, which should be sufficient.
+		console.log("*** Passing through non-/sparql handling... *** ");
 		url = input + '/sparql';
 		_redirects[url] = input;
 		// console.log(input, options);

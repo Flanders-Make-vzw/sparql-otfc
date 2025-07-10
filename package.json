@@ -6,10 +6,9 @@
   "author": "Flanders Make - CodesignS",
   "license": "MIT",
   "dependencies": {
-    "@comunica/query-sparql": "~3.1.2",
-    "@comunica/query-sparql-file": "~3.1.2",
-    "sparqlalgebrajs": "^4.3.8",
-    "sparqljs": "~3.7.1",
+    "@comunica/query-sparql": "~4.3.0",
+    "@comunica/query-sparql-file": "~4.3.0",
+    "sparqlalgebrajs": "^4.3.7",
     "n3": "~1.17.3",
     "express": "~4.19.2",
     "config": "~3.3.11",
